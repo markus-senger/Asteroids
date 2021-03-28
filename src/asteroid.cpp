@@ -1,4 +1,4 @@
-// asteroid.cpp:					MSe, 2021-02-28 
+// asteroid.cpp:                                            MSe, 2021-02-28 
 // v1.0
 // FH Oberösterreich / Campus Hagenberg
 // ----                                                                                                                    
