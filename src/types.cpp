@@ -12,6 +12,11 @@ double degree_to_rad(double degree) {
 	return (degree * M_PI / 180);
 }
 
+int get_random_uniform(int const l, int const u) {
+	static std::mt19937_64 generator{ std::random_device {} () };
+	return std::uniform_int_distribution{ l, u } (generator);
+}
+
 // controls
 bool fly_foward_key(int key) {
 	switch (key) {

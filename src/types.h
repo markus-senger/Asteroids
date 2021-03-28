@@ -20,6 +20,7 @@ constexpr bool	show_score			= true;
 
 // auxiliary functions
 double	degree_to_rad		(double degree);
+int		get_random_uniform	(int const l, int const u);
 
 // controls
 bool fly_foward_key			(int key);

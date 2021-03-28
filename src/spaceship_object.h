@@ -1,6 +1,6 @@
 // spaceship_object.h:										MSe, 2021-02-28 
 // v1.0
-// FH OberÃ¶sterreich / Campus Hagenberg
+// FH Oberösterreich / Campus Hagenberg
 // ----                                                                                                                    
 // ========================================================================
 
@@ -18,10 +18,10 @@ public:
 	spaceship_object	(int pos_x, int pos_y, double degree) : base{ pos_x, pos_y, degree } {}
 	~spaceship_object	() = default;
 
-	virtual void fly_forward	()			override;
+	virtual void fly_forward	()						override;
 	virtual void rotate_right	();
 	virtual void rotate_left	();
-	virtual void draw		(context_t& context)	override;
+	virtual void draw			(context_t& context)	override;
 
 	bool get_shoot_ready	()	const { return m_shoot_ready; }
 
@@ -30,5 +30,5 @@ public:
 
 private:
 
-	bool	m_shoot_ready{ false };
+	bool		m_shoot_ready{ false };
 };

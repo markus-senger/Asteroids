@@ -1,11 +1,12 @@
-// draw_window.cpp:                                         MSe, 2021-02-28 
+// draw_window.cpp:											MSe, 2021-02-28 
 // v1.0
-// FH OberÃ¶sterreich / Campus Hagenberg
+// FH Oberösterreich / Campus Hagenberg
 // ----                                                                                                                    
 // ========================================================================
 
 #include "draw_window.h"
 #include <fstream>
+#include <iterator>
 
 // -------------------- public --------------------
 
@@ -18,7 +19,6 @@ draw_window::draw_window() {
 void draw_window::on_init() {
 	start_timer(ml5::duration_t(refresh_interval));
 	get_highscore_from_file();
-	srand(time(NULL));
 }
 
 void draw_window::on_exit() {
@@ -50,7 +50,7 @@ void draw_window::on_timer(ml5::timer_event const& event) {
 
 		calc_spawnpoint(&x, &y, &direction);
 		
-		m_asteroids.add(std::make_unique<asteroid>(x, y, direction, 0));
+		m_asteroids.push_back(std::make_unique<asteroid>(x, y, direction, 0));
 		asteroid_cooldown_counter = m_level;
 	}
 
@@ -61,7 +61,7 @@ void draw_window::on_timer(ml5::timer_event const& event) {
 
 		calc_spawnpoint(&x, &y, &direction);
 
-		m_enemies.add(std::make_unique<enemy_ship>(x, y, direction));
+		m_enemies.push_back(std::make_unique<enemy_ship>(x, y, direction));
 		enemy_ship_spawn_cooldown_counter = m_level;
 	}
 
@@ -87,7 +87,7 @@ void draw_window::on_key(ml5::key_event const& event) {
 						abs(sin(degree_to_rad(m_ship.get_degree()))) * abs(cos(degree_to_rad(m_ship.get_degree()))) * 10);
 			int tmp_y = round(m_ship.get_pos_y() + (ship_size / 2 - rocket_size / 2) + 
 						abs(sin(degree_to_rad(m_ship.get_degree()))) * abs(cos(degree_to_rad(m_ship.get_degree()))) * 10);
-			m_rockets.add(std::make_unique<rocket>(tmp_x, tmp_y, m_ship.get_degree(), 0));
+			m_rockets.push_back(std::make_unique<rocket>(tmp_x, tmp_y, m_ship.get_degree(), 0));
 			m_ship.set_shoot_ready(false);
 		}
 	}
@@ -171,7 +171,7 @@ void draw_window::save_highscore_in_file() {
 }
 
 void draw_window::calc_spawnpoint(int* x, int* y, int* direction) {
-	int spawnpoint = rand() % 4;
+	int spawnpoint = get_random_uniform(0, 3);
 
 	if (spawnpoint == 0) {
 		*x = rand() % get_width();
@@ -212,7 +212,7 @@ void draw_window::check_collision() {
 	for (auto& asteroid_obj : m_asteroids) {
 		if (asteroid_obj != nullptr) {
 			if (check_out_of_border_with_buffer(asteroid_obj->get_pos_x(), asteroid_obj->get_pos_y())) {
-				m_asteroids.remove(asteroid_obj);
+				asteroid_obj->set_deletable(true);
 			}
 
 			wxRegion hit_area_asteroid = asteroid_obj->get_hit_area();
@@ -221,20 +221,17 @@ void draw_window::check_collision() {
 				game_over();
 				break;
 			}
-		
-			if (check_collision_asteroids_asteroids(asteroid_obj) 
-				|| check_collision_asteroids_rockets(asteroid_obj) 
-				|| check_collision_asteroids_enemy_ships(asteroid_obj)) {
-				break;
-			}
+
+			check_collision_asteroids_asteroids(asteroid_obj);
+			check_collision_asteroids_rockets(asteroid_obj);
+			check_collision_asteroids_enemy_ships(asteroid_obj);
 		}
 	}
 
 	for (auto& rocket_obj : m_rockets) {
 		if (rocket_obj != nullptr) {
 			if (check_out_of_border_with_buffer(rocket_obj->get_pos_x(), rocket_obj->get_pos_y())) {
-				m_rockets.remove(rocket_obj);
-				break;
+				rocket_obj->set_deletable(true);
 			}
 			wxRegion hit_area_rocket = rocket_obj->get_hit_area();
 			hit_area_rocket.Intersect(m_ship.get_hit_area());
@@ -243,17 +240,14 @@ void draw_window::check_collision() {
 				break;
 			}
 
-			if (check_collision_rockets_enemy_ships(rocket_obj)) {
-				break;
-			}
+			check_collision_rockets_enemy_ships(rocket_obj);
 		}
 	}
 
 	for (auto& enemy_obj : m_enemies) {
 		if (enemy_obj != nullptr) {
 			if (check_out_of_border_with_buffer(enemy_obj->get_pos_x(), enemy_obj->get_pos_y())) {
-				m_enemies.remove(enemy_obj);
-				break;
+				enemy_obj->set_deletable(true);
 			}
 		}
 		wxRegion hit_area_enemy = enemy_obj->get_hit_area();
@@ -263,13 +257,20 @@ void draw_window::check_collision() {
 			break;
 		}
 		
-		if (check_collision_enemy_ships_other_ships(enemy_obj)) {
-			break;
-		}
+		check_collision_enemy_ships_other_ships(enemy_obj);
+
 	}
+	delete_asteroids();
+	delete_rockets();
+	delete_enemies();
+
+	for (auto& new_asteroid_obj : m_new_asteroids) {
+		m_asteroids.push_back(std::move(new_asteroid_obj));
+	}
+	m_new_asteroids.clear();
 }
 
-bool draw_window::check_collision_asteroids_asteroids(std::unique_ptr<asteroid>& asteroid_obj) {
+void draw_window::check_collision_asteroids_asteroids(std::unique_ptr<asteroid>& asteroid_obj) {
 	int x = 0;
 	int y = 0;
 	bool spawn_small = false;
@@ -285,19 +286,17 @@ bool draw_window::check_collision_asteroids_asteroids(std::unique_ptr<asteroid>&
 					y = asteroid_obj_sec->get_pos_y();
 				}
 				
-				m_asteroids.remove(asteroid_obj_sec);
-				break;
+				asteroid_obj->set_deletable(true);
+				asteroid_obj_sec->set_deletable(true);
 			}
 		}
 	}
 	if (spawn_small) {
 		create_small_asteroids(x, y);
-		m_asteroids.remove(asteroid_obj);
 	}
-	return spawn_small;
 }
 
-bool draw_window::check_collision_asteroids_rockets(std::unique_ptr<asteroid>& asteroid_obj) {
+void draw_window::check_collision_asteroids_rockets(std::unique_ptr<asteroid>& asteroid_obj) {
 	int x = 0;
 	int y = 0;
 	bool spawn_small = false;
@@ -318,23 +317,21 @@ bool draw_window::check_collision_asteroids_rockets(std::unique_ptr<asteroid>& a
 				}
 				if (rocket_obj->get_type() == 0) m_hits++;
 				if (m_level < 20) m_level++;
-				m_rockets.remove(rocket_obj);
-				m_asteroids.remove(asteroid_obj);
-				break;
+				rocket_obj->set_deletable(true);
+				asteroid_obj->set_deletable(true);
 			}
 		}
 	}
+
 	if (spawn_small) {
 		create_small_asteroids(x, y);
 	}
-	return spawn_small;
 }
 
-bool draw_window::check_collision_asteroids_enemy_ships(std::unique_ptr<asteroid>& asteroid_obj) {
+void draw_window::check_collision_asteroids_enemy_ships(std::unique_ptr<asteroid>& asteroid_obj) {
 	int x = 0;
 	int y = 0;
 	bool spawn_small = false;
-	bool collision = false;
 
 	for (auto& enemy_obj : m_enemies) {
 		if (enemy_obj != nullptr) {
@@ -347,21 +344,19 @@ bool draw_window::check_collision_asteroids_enemy_ships(std::unique_ptr<asteroid
 						x = asteroid_obj->get_pos_x();
 						y = asteroid_obj->get_pos_y();
 					}
-					m_enemies.remove(enemy_obj);
-					m_asteroids.remove(asteroid_obj);
-					collision = true;
-					break;
+					enemy_obj->set_deletable(true);
+					asteroid_obj->set_deletable(true);
 				}
 			}
 		}
 	}
+
 	if (spawn_small) {
 		create_small_asteroids(x, y);
 	}
-	return collision;
 }
 
-bool draw_window::check_collision_rockets_enemy_ships(std::unique_ptr<rocket>& rocket_obj) {
+void draw_window::check_collision_rockets_enemy_ships(std::unique_ptr<rocket>& rocket_obj) {
 	for (auto& enemy_obj : m_enemies) {
 		if (enemy_obj != nullptr && rocket_obj != nullptr && rocket_obj->get_time() < 0) {
 			wxRegion hit_area_enemy = enemy_obj->get_hit_area();
@@ -373,28 +368,24 @@ bool draw_window::check_collision_rockets_enemy_ships(std::unique_ptr<rocket>& r
 					if (m_level < 20) m_level++;
 				}
 
-				m_rockets.remove(rocket_obj);
-				m_enemies.remove(enemy_obj);
-				return true;
+				rocket_obj->set_deletable(true);
+				enemy_obj->set_deletable(true);
 			}
 		}
 	}
-	return false;
 }
 
-bool draw_window::check_collision_enemy_ships_other_ships(std::unique_ptr<enemy_ship>& enemy_obj) {
+void draw_window::check_collision_enemy_ships_other_ships(std::unique_ptr<enemy_ship>& enemy_obj) {
 	for (auto& enemy_obj_sec : m_enemies) {
 		if (enemy_obj != nullptr && enemy_obj_sec != nullptr && enemy_obj != enemy_obj_sec) {
 			wxRegion hit_area_enemy = enemy_obj->get_hit_area();
 			hit_area_enemy.Intersect(enemy_obj_sec->get_hit_area());
 			if (!hit_area_enemy.IsEmpty()) {
-				m_enemies.remove(enemy_obj);
-				m_enemies.remove(enemy_obj_sec);
-				return true;
+				enemy_obj->set_deletable(true);
+				enemy_obj_sec->set_deletable(true);
 			}
 		}
 	}
-	return false;
 }
 
 void draw_window::create_small_asteroids(int x, int y) {
@@ -402,15 +393,15 @@ void draw_window::create_small_asteroids(int x, int y) {
 	wxPoint planet2{ x + 25, y + 25 };
 	wxPoint planet3{ x, y - 20 };
 
-	if (!check_out_of_border(planet1.x, planet1.y))	m_asteroids.add(std::make_unique<asteroid>(planet1.x, planet1.y, 40, 1));
-	if (!check_out_of_border(planet2.x, planet2.y))	m_asteroids.add(std::make_unique<asteroid>(planet2.x, planet2.y, 220, 1));
-	if (!check_out_of_border(planet3.x, planet3.y))	m_asteroids.add(std::make_unique<asteroid>(planet3.x, planet3.y, 320, 1));
+	if (!check_out_of_border(planet1.x, planet1.y))	m_new_asteroids.push_back(std::make_unique<asteroid>(planet1.x, planet1.y, 40, 1));
+	if (!check_out_of_border(planet2.x, planet2.y))	m_new_asteroids.push_back(std::make_unique<asteroid>(planet2.x, planet2.y, 220, 1));
+	if (!check_out_of_border(planet3.x, planet3.y))	m_new_asteroids.push_back(std::make_unique<asteroid>(planet3.x, planet3.y, 320, 1));
 }
 
 void draw_window::handle_enemy_ship() {
 	for (auto& enemy_obj : m_enemies) {
 		if (enemy_obj != nullptr) {
-			int action = rand() % 7;
+			int action = get_random_uniform(0, 6);;
 			if (action >= 0 && action <= 3) {
 				enemy_obj->fly_forward();
 			}
@@ -426,10 +417,28 @@ void draw_window::handle_enemy_ship() {
 						abs(sin(degree_to_rad(enemy_obj->get_degree()))) * abs(cos(degree_to_rad(enemy_obj->get_degree()))) * 10);
 					int tmp_y = round(enemy_obj->get_pos_y() + (ship_size / 2 - rocket_size / 2) +
 						abs(sin(degree_to_rad(enemy_obj->get_degree()))) * abs(cos(degree_to_rad(enemy_obj->get_degree()))) * 10);
-					m_rockets.add(std::make_unique<rocket>(tmp_x, tmp_y, enemy_obj->get_degree(), 1));
+					m_rockets.push_back(std::make_unique<rocket>(tmp_x, tmp_y, enemy_obj->get_degree(), 1));
 					enemy_obj->set_shoot_ready(false);
 				}
 			}
 		}
 	}
+}
+
+void draw_window::delete_asteroids() {
+	auto const asteroids_end{ std::remove_if(std::begin(m_asteroids), std::end(m_asteroids),
+					[](std::unique_ptr<asteroid>& x) { return x->get_deletable() == true; }) };
+	m_asteroids.erase(asteroids_end, std::end(m_asteroids));
+}
+
+void draw_window::delete_rockets() {
+	auto const rockets_end{ std::remove_if(std::begin(m_rockets), std::end(m_rockets),
+				[](std::unique_ptr<rocket>& x) { return x->get_deletable() == true; }) };
+	m_rockets.erase(rockets_end, std::end(m_rockets));
+}
+
+void draw_window::delete_enemies() {
+	auto const enemy_ship_end{ std::remove_if(std::begin(m_enemies), std::end(m_enemies),
+				[](std::unique_ptr<enemy_ship>& x) { return x->get_deletable() == true; }) };
+	m_enemies.erase(enemy_ship_end, std::end(m_enemies));
 }
