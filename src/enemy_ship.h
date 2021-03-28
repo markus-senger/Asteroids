@@ -1,6 +1,6 @@
 // enemy_ship.h:											MSe, 2021-02-28 
 // v1.0
-// FH Oberösterreich / Campus Hagenberg
+// FH OberÃ¶sterreich / Campus Hagenberg
 // ----                                                                                                                    
 // ========================================================================
 
@@ -15,6 +15,6 @@ class enemy_ship : public spaceship_object {
 
 public:
 
-	enemy_ship(int pos_x, int pos_y, double degree);
+	enemy_ship	(int pos_x, int pos_y, double degree);
 	~enemy_ship	() = default;
 };
