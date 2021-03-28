@@ -1,4 +1,4 @@
-// draw_window.h:											MSe, 2021-02-28 
+// draw_window.h:                                           MSe, 2021-02-28 
 // v1.0
 // FH Oberösterreich / Campus Hagenberg
 // ----                                                                                                                    
