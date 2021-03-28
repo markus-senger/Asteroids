@@ -1,6 +1,6 @@
-// draw_window.cpp:											MSe, 2021-02-28 
+// draw_window.cpp:                                         MSe, 2021-02-28 
 // v1.0
-// FH Oberösterreich / Campus Hagenberg
+// FH OberÃ¶sterreich / Campus Hagenberg
 // ----                                                                                                                    
 // ========================================================================
 
