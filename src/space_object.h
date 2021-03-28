@@ -1,6 +1,6 @@
-// space_object.h:											MSe, 2021-02-28 
+// space_object.h:					MSe, 2021-02-28 
 // v1.0
-// FH Oberösterreich / Campus Hagenberg
+// FH OberÃ¶sterreich / Campus Hagenberg
 // ----                                                                                                                    
 // ========================================================================
 
@@ -19,15 +19,15 @@ public:
 	space_object	(int pos_x, int pos_y, double degree) : m_pos{ pos_x, pos_y }, m_degree{ degree } {}
 	~space_object	() = default;
 
-	virtual void	draw			(context_t& context);
-	virtual void	fly_forward		();
-	void			calc_hit_area	(wxPoint* corners);
+	virtual void	draw		(context_t& context);
+	virtual void	fly_forward	();
+	void		calc_hit_area	(wxPoint* corners);
 
-	int			get_pos_x		()	const { return m_pos.x; }
-	int			get_pos_y		()	const { return m_pos.y; }
-	double		get_degree		()	const { return m_degree; }
-	int			get_hitbox		()	const { return m_hitbox; }
-	int			get_speed		()	const { return m_speed; }
+	int		get_pos_x	()	const { return m_pos.x; }
+	int		get_pos_y	()	const { return m_pos.y; }
+	double		get_degree	()	const { return m_degree; }
+	int		get_hitbox	()	const { return m_hitbox; }
+	int		get_speed	()	const { return m_speed; }
 	wxRegion	get_hit_area	();
 
 
@@ -37,6 +37,6 @@ protected:
 
 	wxPoint		m_pos		{ 0,0 };
 	double		m_degree	{ 0 };
-	int			m_hitbox	{ 0 };
-	int			m_speed		{ 0 };
+	int		m_hitbox	{ 0 };
+	int		m_speed		{ 0 };
 };
